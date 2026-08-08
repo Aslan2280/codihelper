@@ -493,6 +493,22 @@ def create_shop_keyboard() -> InlineKeyboardMarkup:
         keyboard.append(row)
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
+# ==================== ФУНКЦИЯ ДЛЯ ОБРАБОТКИ КОМАНД БЕЗ / ====================
+
+def text_command(command_name: str):
+    """Декоратор для обработки команд без /"""
+    def decorator(func):
+        # Регистрируем команду с /
+        dp.message.register(func, Command(command_name))
+        # Регистрируем команду без /
+        @dp.message(F.text.lower() == command_name.lower())
+        async def wrapper(message: Message):
+            # Копируем текст, чтобы команда выглядела как с /
+            message.text = f"/{command_name}"
+            await func(message)
+        return func
+    return decorator
+
 # ==================== ОСНОВНЫЕ КОМАНДЫ ====================
 
 @dp.message(CommandStart())
@@ -537,9 +553,11 @@ async def start_command(message: Message):
     )
     await message.reply(welcome_text)
 
+# Регистрируем команду /помощь и "помощь"
 @dp.message(Command("помощь"))
+@dp.message(F.text.lower() == "помощь")
 async def help_command(message: Message):
-    """Команда /помощь"""
+    """Команда помощь"""
     help_text = (
         f"Список всех команд {BOT_NAME}:\n\n"
         "Экономика:\n"
@@ -585,8 +603,9 @@ async def help_command(message: Message):
 # ==================== ЭКОНОМИКА ====================
 
 @dp.message(Command("баланс"))
+@dp.message(F.text.lower() == "баланс")
 async def balance_command(message: Message):
-    """Команда /баланс"""
+    """Команда баланс"""
     user_id, user_obj = await find_user(message)
     
     if user_id:
@@ -609,8 +628,9 @@ async def balance_command(message: Message):
         )
 
 @dp.message(Command("передать"))
+@dp.message(lambda message: message.text and message.text.lower().startswith("передать"))
 async def give_command(message: Message):
-    """Команда /передать"""
+    """Команда передать"""
     args = message.text.split()
     if len(args) < 3:
         await message.reply("Использование: передать пользователь сумма")
@@ -653,8 +673,9 @@ async def give_command(message: Message):
     )
 
 @dp.message(Command("ежедневно"))
+@dp.message(F.text.lower() == "ежедневно")
 async def daily_command(message: Message):
-    """Команда /ежедневно"""
+    """Команда ежедневно"""
     user = get_user(message.from_user.id)
     last_daily = user.get('daily_last')
     
@@ -686,8 +707,9 @@ async def daily_command(message: Message):
 # ==================== VIP ====================
 
 @dp.message(Command("вип"))
+@dp.message(F.text.lower() == "вип")
 async def vip_command(message: Message):
-    """Команда /вип"""
+    """Команда вип"""
     user_id, user_obj = await find_user(message)
     
     if user_id:
@@ -736,8 +758,9 @@ async def vip_command(message: Message):
         )
 
 @dp.message(Command("купитьвип"))
+@dp.message(lambda message: message.text and message.text.lower().startswith("купитьвип"))
 async def buy_vip_command(message: Message):
-    """Команда /купитьвип"""
+    """Команда купитьвип"""
     args = message.text.split()
     if len(args) < 2:
         await message.reply("Использование: купитьвип дни")
@@ -775,8 +798,9 @@ async def buy_vip_command(message: Message):
 # ==================== МАГАЗИН ====================
 
 @dp.message(Command("магазин"))
+@dp.message(F.text.lower() == "магазин")
 async def shop_command(message: Message):
-    """Команда /магазин"""
+    """Команда магазин"""
     items = get_shop_items()
     keyboard = create_shop_keyboard()
     
@@ -837,8 +861,9 @@ async def buy_callback(callback: CallbackQuery):
     )
 
 @dp.message(Command("купить"))
+@dp.message(lambda message: message.text and message.text.lower().startswith("купить"))
 async def buy_command(message: Message):
-    """Команда /купить"""
+    """Команда купить"""
     args = message.text.split()
     if len(args) < 2:
         await message.reply("Использование: купить ID_товара")
@@ -892,8 +917,9 @@ async def buy_command(message: Message):
 # ==================== ПРОФИЛЬ ====================
 
 @dp.message(Command("инфо"))
+@dp.message(F.text.lower() == "инфо")
 async def info_command(message: Message):
-    """Команда /инфо"""
+    """Команда инфо"""
     user_id, user_obj = await find_user(message)
     
     if not user_id:
@@ -922,8 +948,9 @@ async def info_command(message: Message):
     await message.reply(info_text)
 
 @dp.message(Command("уровень"))
+@dp.message(F.text.lower() == "уровень")
 async def level_command(message: Message):
-    """Команда /уровень"""
+    """Команда уровень"""
     user = get_user(message.from_user.id)
     progress = int((user['exp'] / user['exp_to_next']) * 20)
     bar = "█" * progress + "░" * (20 - progress)
@@ -937,8 +964,9 @@ async def level_command(message: Message):
     )
 
 @dp.message(Command("реферал"))
+@dp.message(F.text.lower() == "реферал")
 async def referral_command(message: Message):
-    """Команда /реферал"""
+    """Команда реферал"""
     user_id = message.from_user.id
     user = get_user(user_id)
     
@@ -957,8 +985,9 @@ async def referral_command(message: Message):
 # ==================== ФЕРМА ====================
 
 @dp.message(Command("ферма"))
+@dp.message(F.text.lower() == "ферма")
 async def farm_command(message: Message):
-    """Команда /ферма"""
+    """Команда ферма"""
     user = get_user(message.from_user.id)
     farm = user.get('farm', {"level": 1, "last_collect": None, "production": FARM_BASE_PRODUCTION})
     
@@ -987,8 +1016,9 @@ async def farm_command(message: Message):
     )
 
 @dp.message(Command("собрать"))
+@dp.message(F.text.lower() == "собрать")
 async def collect_command(message: Message):
-    """Команда /собрать"""
+    """Команда собрать"""
     user = get_user(message.from_user.id)
     farm = user.get('farm', {"level": 1, "last_collect": None, "production": FARM_BASE_PRODUCTION})
     
@@ -1020,8 +1050,9 @@ async def collect_command(message: Message):
     )
 
 @dp.message(Command("улучшитьферму"))
+@dp.message(F.text.lower() == "улучшитьферму")
 async def upgrade_farm_command(message: Message):
-    """Команда /улучшитьферму"""
+    """Команда улучшитьферму"""
     user = get_user(message.from_user.id)
     farm = user.get('farm', {"level": 1, "last_collect": None, "production": FARM_BASE_PRODUCTION})
     
@@ -1055,8 +1086,9 @@ async def upgrade_farm_command(message: Message):
 # ==================== БИРЖА ====================
 
 @dp.message(Command("биржа"))
+@dp.message(F.text.lower() == "биржа")
 async def market_command(message: Message):
-    """Команда /биржа"""
+    """Команда биржа"""
     orders = get_market_orders()
     
     market_text = "Биржа ирисок\n\n"
@@ -1085,8 +1117,9 @@ async def market_command(message: Message):
     await message.reply(market_text)
 
 @dp.message(Command("продать"))
+@dp.message(lambda message: message.text and message.text.lower().startswith("продать"))
 async def sell_command(message: Message):
-    """Команда /продать"""
+    """Команда продать"""
     args = message.text.split()
     if len(args) < 3:
         await message.reply("Использование: продать количество цена_за_1_ириску")
@@ -1125,8 +1158,9 @@ async def sell_command(message: Message):
     )
 
 @dp.message(Command("купитьбиржу"))
+@dp.message(lambda message: message.text and message.text.lower().startswith("купитьбиржу"))
 async def buy_market_command(message: Message):
-    """Команда /купитьбиржу"""
+    """Команда купитьбиржу"""
     args = message.text.split()
     if len(args) < 3:
         await message.reply("Использование: купитьбиржу количество цена_за_1_ириску")
@@ -1163,8 +1197,9 @@ async def buy_market_command(message: Message):
 # ==================== МОДЕРАЦИЯ ====================
 
 @dp.message(Command("предупредить"))
+@dp.message(lambda message: message.text and message.text.lower().startswith("предупредить"))
 async def warn_command(message: Message):
-    """Команда /предупредить"""
+    """Команда предупредить"""
     target_id, target_obj = await find_user(message)
     if not target_id:
         await message.reply("Пользователь не найден. Укажите @username, ID или ответьте на сообщение")
@@ -1192,8 +1227,9 @@ async def warn_command(message: Message):
         )
 
 @dp.message(Command("мут"))
+@dp.message(lambda message: message.text and message.text.lower().startswith("мут"))
 async def mute_command(message: Message):
-    """Команда /мут"""
+    """Команда мут"""
     target_id, target_obj = await find_user(message)
     if not target_id:
         await message.reply("Пользователь не найден. Укажите @username, ID или ответьте на сообщение")
@@ -1218,8 +1254,9 @@ async def mute_command(message: Message):
     )
 
 @dp.message(Command("размут"))
+@dp.message(lambda message: message.text and message.text.lower().startswith("размут"))
 async def unmute_command(message: Message):
-    """Команда /размут"""
+    """Команда размут"""
     target_id, target_obj = await find_user(message)
     if not target_id:
         await message.reply("Пользователь не найден. Укажите @username, ID или ответьте на сообщение")
@@ -1234,8 +1271,9 @@ async def unmute_command(message: Message):
     )
 
 @dp.message(Command("кик"))
+@dp.message(lambda message: message.text and message.text.lower().startswith("кик"))
 async def kick_command(message: Message):
-    """Команда /кик"""
+    """Команда кик"""
     target_id, target_obj = await find_user(message)
     if not target_id:
         await message.reply("Пользователь не найден. Укажите @username, ID или ответьте на сообщение")
@@ -1251,8 +1289,9 @@ async def kick_command(message: Message):
         await message.reply(f"Ошибка: {str(e)}")
 
 @dp.message(Command("бан"))
+@dp.message(lambda message: message.text and message.text.lower().startswith("бан"))
 async def ban_command(message: Message):
-    """Команда /бан"""
+    """Команда бан"""
     target_id, target_obj = await find_user(message)
     if not target_id:
         await message.reply("Пользователь не найден. Укажите @username, ID или ответьте на сообщение")
@@ -1267,8 +1306,9 @@ async def ban_command(message: Message):
         await message.reply(f"Ошибка: {str(e)}")
 
 @dp.message(Command("разбан"))
+@dp.message(lambda message: message.text and message.text.lower().startswith("разбан"))
 async def unban_command(message: Message):
-    """Команда /разбан"""
+    """Команда разбан"""
     target_id, target_obj = await find_user(message)
     if not target_id:
         await message.reply("Пользователь не найден. Укажите @username, ID или ответьте на сообщение")
@@ -1285,8 +1325,9 @@ async def unban_command(message: Message):
 # ==================== НАСТРОЙКИ ГРУППЫ ====================
 
 @dp.message(Command("приветствие"))
+@dp.message(lambda message: message.text and message.text.lower().startswith("приветствие"))
 async def set_welcome_command(message: Message):
-    """Команда /приветствие"""
+    """Команда приветствие"""
     args = message.text.split(maxsplit=1)
     if len(args) < 2:
         await message.reply("Использование: приветствие Текст приветствия")
@@ -1298,24 +1339,27 @@ async def set_welcome_command(message: Message):
     await message.reply("Приветствие сохранено")
 
 @dp.message(Command("включитьприветствие"))
+@dp.message(F.text.lower() == "включитьприветствие")
 async def welcome_on_command(message: Message):
-    """Команда /включитьприветствие"""
+    """Команда включитьприветствие"""
     group = get_group(message.chat.id)
     group['settings']['welcome_enabled'] = True
     update_group(message.chat.id, group)
     await message.reply("Приветствие включено")
 
 @dp.message(Command("выключитьприветствие"))
+@dp.message(F.text.lower() == "выключитьприветствие")
 async def welcome_off_command(message: Message):
-    """Команда /выключитьприветствие"""
+    """Команда выключитьприветствие"""
     group = get_group(message.chat.id)
     group['settings']['welcome_enabled'] = False
     update_group(message.chat.id, group)
     await message.reply("Приветствие выключено")
 
 @dp.message(Command("правила"))
+@dp.message(lambda message: message.text and message.text.lower().startswith("правила"))
 async def set_rules_command(message: Message):
-    """Команда /правила"""
+    """Команда правила"""
     args = message.text.split(maxsplit=1)
     if len(args) < 2:
         await message.reply("Использование: правила Текст правил")
@@ -1327,15 +1371,17 @@ async def set_rules_command(message: Message):
     await message.reply("Правила сохранены")
 
 @dp.message(Command("показатьправила"))
+@dp.message(F.text.lower() == "показатьправила")
 async def show_rules_command(message: Message):
-    """Команда /показатьправила"""
+    """Команда показатьправила"""
     group = get_group(message.chat.id)
     rules = group['settings'].get('rules', 'Правила не установлены')
     await message.reply(f"Правила чата:\n\n{rules}")
 
 @dp.message(Command("добавитьадмина"))
+@dp.message(lambda message: message.text and message.text.lower().startswith("добавитьадмина"))
 async def add_admin_command(message: Message):
-    """Команда /добавитьадмина"""
+    """Команда добавитьадмина"""
     target_id, target_obj = await find_user(message)
     if not target_id:
         await message.reply("Пользователь не найден. Укажите @username, ID или ответьте на сообщение")
@@ -1354,8 +1400,9 @@ async def add_admin_command(message: Message):
     )
 
 @dp.message(Command("удалитьадмина"))
+@dp.message(lambda message: message.text and message.text.lower().startswith("удалитьадмина"))
 async def remove_admin_command(message: Message):
-    """Команда /удалитьадмина"""
+    """Команда удалитьадмина"""
     target_id, target_obj = await find_user(message)
     if not target_id:
         await message.reply("Пользователь не найден. Укажите @username, ID или ответьте на сообщение")
@@ -1376,8 +1423,9 @@ async def remove_admin_command(message: Message):
 # ==================== МЕДАЛИ ====================
 
 @dp.message(Command("медаль"))
+@dp.message(lambda message: message.text and message.text.lower().startswith("медаль"))
 async def medal_command(message: Message):
-    """Команда /медаль"""
+    """Команда медаль"""
     target_id, target_obj = await find_user(message)
     if not target_id:
         await message.reply("Пользователь не найден. Укажите @username, ID или ответьте на сообщение")
@@ -1401,8 +1449,9 @@ async def medal_command(message: Message):
     )
 
 @dp.message(Command("медали"))
+@dp.message(F.text.lower() == "медали")
 async def medals_command(message: Message):
-    """Команда /медали"""
+    """Команда медали"""
     user_id, user_obj = await find_user(message)
     if not user_id:
         user_id = message.from_user.id
@@ -1422,15 +1471,17 @@ async def medals_command(message: Message):
 # ==================== РАЗВЛЕЧЕНИЯ ====================
 
 @dp.message(Command("монетка"))
+@dp.message(F.text.lower() == "монетка")
 async def coins_command(message: Message):
-    """Команда /монетка"""
+    """Команда монетка"""
     result = random.choice(["Орел", "Решка"])
     emoji = "🪙" if result == "Орел" else "🪙"
     await message.reply(f"{emoji} Выпал: {result}")
 
 @dp.message(Command("кости"))
+@dp.message(F.text.lower() == "кости")
 async def dice_command(message: Message):
-    """Команда /кости"""
+    """Команда кости"""
     value = random.randint(1, 6)
     emojis = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"]
     await message.reply(f"🎲 Выпало: {emojis[value-1]} {value}")
