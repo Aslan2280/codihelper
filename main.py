@@ -20,7 +20,7 @@ from aiogram.utils.markdown import hbold, hcode
 BOT_TOKEN = "8919148715:AAF1TL1-EyCZS_EeBVPh3z0Vj9ISpMkTdOc"  # ЗАМЕНИТЕ НА СВОЙ
 BOT_NAME = "CodiHelper"
 
-# Пути к файлам
+# Пути к файлам (в той же папке, где код)
 USERS_FILE = "users.json"
 GROUPS_FILE = "groups.json"
 SHOP_FILE = "shop.json"
@@ -48,14 +48,9 @@ COLORS = {
 
 # ==================== РАБОТА С БАЗОЙ ДАННЫХ ====================
 
-def ensure_data_dir():
-    """Создает папку для данных"""
-    DATA_DIR.mkdir(exist_ok=True)
-
-def load_data(file_path) -> Dict[str, Any]:
-    """Загружает данные из JSON"""
-    ensure_data_dir()
-    if not file_path.exists():
+def load_data(file_path: str) -> Dict[str, Any]:
+    """Загружает данные из JSON файла"""
+    if not os.path.exists(file_path):
         return {}
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -63,9 +58,8 @@ def load_data(file_path) -> Dict[str, Any]:
     except (json.JSONDecodeError, FileNotFoundError):
         return {}
 
-def save_data(file_path, data: Dict[str, Any]):
-    """Сохраняет данные в JSON"""
-    ensure_data_dir()
+def save_data(file_path: str, data: Dict[str, Any]):
+    """Сохраняет данные в JSON файл"""
     with open(file_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
@@ -1465,7 +1459,11 @@ async def welcome_new_member(message: Message):
 async def main():
     print(f"🤖 {BOT_NAME} запущен!")
     print(f"✅ Используйте токен: {BOT_TOKEN[:10]}...")
-    print(f"📁 Данные сохраняются в папке: {DATA_DIR}")
+    print(f"📁 Данные сохраняются в файлах:")
+    print(f"   - {USERS_FILE}")
+    print(f"   - {GROUPS_FILE}")
+    print(f"   - {SHOP_FILE}")
+    print(f"   - {MARKET_FILE}")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
